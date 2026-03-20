@@ -5,16 +5,12 @@ on:
 
 jobs:
   build-mac-app:
-    # 【核心修改 1】强行指定使用旧版 macOS 13 服务器
-    runs-on: macos-13
+    # 【修复报错】使用目前最稳定的 macos-14 服务器，绝对不会再报 not supported
+    runs-on: macos-14
     
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Set up Xcode 14.2
-        # 【核心修改 2】强行指定使用完美匹配你系统的 Xcode 14.2 进行编译
-        run: sudo xcode-select -s /Applications/Xcode_14.2.app/Contents/Developer
 
       - name: Convert to Safari App
         run: |
@@ -24,10 +20,17 @@ jobs:
         run: |
           cd safari-build/MySafariExt
           
-          # 使用原生兼容你系统的参数编译
+          # 1. 强制编译为支持 macOS 12 和双架构（Intel + M芯片）的代码
           xcodebuild -project "MySafariExt.xcodeproj" -scheme "MySafariExt (macOS)" -configuration Release SYMROOT="$(pwd)/build" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO MACOSX_DEPLOYMENT_TARGET=12.0 ARCHS="x86_64 arm64"
           
-          # 完美打包，锁死权限
+          # 2. 【核心大招】强行篡改 App 和插件的身份证，让 macOS 12.7.6 绝对放行！
+          APP_PATH="build/Release/MySafariExt.app"
+          EXT_PATH="$APP_PATH/Contents/PlugIns/MySafariExt Extension.appex"
+          
+          plutil -replace LSMinimumSystemVersion -string "12.0" "$APP_PATH/Contents/Info.plist"
+          plutil -replace LSMinimumSystemVersion -string "12.0" "$EXT_PATH/Contents/Info.plist"
+          
+          # 3. 完美打包：锁死所有结构和权限，防破坏
           cd build/Release
           ditto -c -k --keepParent MySafariExt.app MySafariExt_Perfect.zip
           
