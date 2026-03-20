@@ -13,20 +13,17 @@ jobs:
 
       - name: Convert to Safari App
         run: |
-          # 【精准定位】将这里的路径改成了你的实际文件夹名 ./0.3.4_0
           xcrun safari-web-extension-converter ./0.3.4_0 --project-location ./safari-build --app-name "MySafariExt" --no-prompt --bundle-identifier com.yourname.ext
           
       - name: Build macOS App (Bypass Signature)
         run: |
-          # 进入苹果自动生成的子文件夹
           cd safari-build/MySafariExt
           
-          # 强行编译，跳过签名
-          xcodebuild -project "MySafariExt.xcodeproj" -scheme "MySafariExt (macOS)" -configuration Release SYMROOT="$(pwd)/build" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          # 【本次核心修复】在末尾加上了 MACOSX_DEPLOYMENT_TARGET=12.0 (强制兼容 macOS 12) 和 ARCHS="x86_64 arm64" (强制兼容所有芯片)
+          xcodebuild -project "MySafariExt.xcodeproj" -scheme "MySafariExt (macOS)" -configuration Release SYMROOT="$(pwd)/build" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO MACOSX_DEPLOYMENT_TARGET=12.0 ARCHS="x86_64 arm64"
           
       - name: Upload App for Download
         uses: actions/upload-artifact@v4
         with:
           name: MySafariExt-App
-          # 提取打包好的成品
           path: safari-build/MySafariExt/build/Release/MySafariExt.app
