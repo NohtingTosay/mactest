@@ -1,0 +1,30 @@
+name: Build Safari Extension
+
+on:
+  workflow_dispatch: # 允许你手动点击按钮触发打包
+
+jobs:
+  build-mac-app:
+    runs-on: macos-latest # 使用 GitHub 免费提供的最新版 macOS 环境
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Convert to Safari App
+        run: |
+          # 将 src 文件夹下的 Chrome 插件转换为 Mac App 项目
+          xcrun safari-web-extension-converter ./src --project-location ./safari-build --app-name "MySafariExt" --no-prompt --bundle-identifier com.yourname.ext
+          
+      - name: Build macOS App (Bypass Signature)
+        run: |
+          cd safari-build
+          # 强行编译，跳过苹果的本地开发者签名验证
+          xcodebuild -project "MySafariExt.xcodeproj" -scheme "MySafariExt (macOS)" -configuration Release SYMROOT="$(pwd)/build" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+          
+      - name: Upload App for Download
+        uses: actions/upload-artifact@v3
+        with:
+          name: MySafariExt-App
+          # 将编译好的 .app 文件夹提取出来供你下载
+          path: safari-build/build/Release/MySafariExt.app
