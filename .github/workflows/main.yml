@@ -1,29 +1,32 @@
 name: Build Safari Extension
 
 on:
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build-mac-app:
-    runs-on: macos-latest # 使用最新的 macOS 环境
+    runs-on: macos-latest
     
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4 # 【已修复】升级到 v4
+        uses: actions/checkout@v4
 
       - name: Convert to Safari App
         run: |
-          # 将 src 文件夹转换为 Mac App
+          # 【精准定位】将这里的路径改成了你的实际文件夹名 ./0.3.4_0
           xcrun safari-web-extension-converter ./0.3.4_0 --project-location ./safari-build --app-name "MySafariExt" --no-prompt --bundle-identifier com.yourname.ext
           
       - name: Build macOS App (Bypass Signature)
         run: |
-          cd safari-build
+          # 进入苹果自动生成的子文件夹
+          cd safari-build/MySafariExt
+          
           # 强行编译，跳过签名
           xcodebuild -project "MySafariExt.xcodeproj" -scheme "MySafariExt (macOS)" -configuration Release SYMROOT="$(pwd)/build" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
           
       - name: Upload App for Download
-        uses: actions/upload-artifact@v4 # 【已修复】升级到 v4
+        uses: actions/upload-artifact@v4
         with:
           name: MySafariExt-App
-          path: safari-build/build/Release/MySafariExt.app
+          # 提取打包好的成品
+          path: safari-build/MySafariExt/build/Release/MySafariExt.app
