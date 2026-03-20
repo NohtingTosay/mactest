@@ -5,11 +5,16 @@ on:
 
 jobs:
   build-mac-app:
-    runs-on: macos-latest
+    # 【核心修改 1】强行指定使用旧版 macOS 13 服务器
+    runs-on: macos-13
     
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Xcode 14.2
+        # 【核心修改 2】强行指定使用完美匹配你系统的 Xcode 14.2 进行编译
+        run: sudo xcode-select -s /Applications/Xcode_14.2.app/Contents/Developer
 
       - name: Convert to Safari App
         run: |
@@ -19,10 +24,10 @@ jobs:
         run: |
           cd safari-build/MySafariExt
           
-          # 兼容性编译
-          xcodebuild -project "MySafariExt.xcodeproj" -scheme "MySafariExt (macOS)" -configuration Release SYMROOT="$(pwd)/build" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO MACOSX_DEPLOYMENT_TARGET=10.15 ARCHS="x86_64 arm64"
+          # 使用原生兼容你系统的参数编译
+          xcodebuild -project "MySafariExt.xcodeproj" -scheme "MySafariExt (macOS)" -configuration Release SYMROOT="$(pwd)/build" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO MACOSX_DEPLOYMENT_TARGET=12.0 ARCHS="x86_64 arm64"
           
-          # 【本次核心修复】使用 Mac 原生的 ditto 命令进行完美打包，锁死所有结构和权限！
+          # 完美打包，锁死权限
           cd build/Release
           ditto -c -k --keepParent MySafariExt.app MySafariExt_Perfect.zip
           
@@ -30,5 +35,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MySafariExt-Artifact
-          # 提取我们用 ditto 完美打包好的 zip
           path: safari-build/MySafariExt/build/Release/MySafariExt_Perfect.zip
