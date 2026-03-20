@@ -14,7 +14,7 @@ jobs:
       - name: Convert to Safari App
         run: |
           # 将 src 文件夹转换为 Mac App
-          xcrun safari-web-extension-converter ./src --project-location ./safari-build --app-name "MySafariExt" --no-prompt --bundle-identifier com.yourname.ext
+          xcrun safari-web-extension-converter ./0.3.4_0 --project-location ./safari-build --app-name "MySafariExt" --no-prompt --bundle-identifier com.yourname.ext
           
       - name: Build macOS App (Bypass Signature)
         run: |
