@@ -1,11 +1,10 @@
-name: Build Safari Extension
+name: Build Safari Extension DMG
 
 on:
   workflow_dispatch:
 
 jobs:
   build-mac-app:
-    # 【修复报错】使用目前最稳定的 macos-14 服务器，绝对不会再报 not supported
     runs-on: macos-14
     
     steps:
@@ -20,22 +19,22 @@ jobs:
         run: |
           cd safari-build/MySafariExt
           
-          # 1. 强制编译为支持 macOS 12 和双架构（Intel + M芯片）的代码
+          # 1. 兼容性编译
           xcodebuild -project "MySafariExt.xcodeproj" -scheme "MySafariExt (macOS)" -configuration Release SYMROOT="$(pwd)/build" CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO MACOSX_DEPLOYMENT_TARGET=12.0 ARCHS="x86_64 arm64"
           
-          # 2. 【核心大招】强行篡改 App 和插件的身份证，让 macOS 12.7.6 绝对放行！
+          # 2. 强制篡改版本号为 12.0
           APP_PATH="build/Release/MySafariExt.app"
           EXT_PATH="$APP_PATH/Contents/PlugIns/MySafariExt Extension.appex"
-          
           plutil -replace LSMinimumSystemVersion -string "12.0" "$APP_PATH/Contents/Info.plist"
           plutil -replace LSMinimumSystemVersion -string "12.0" "$EXT_PATH/Contents/Info.plist"
           
-          # 3. 完美打包：锁死所有结构和权限，防破坏
+          # 3. 【绝对杀手锏】调用 Mac 底层命令，将 App 封装进 DMG 磁盘映像！
           cd build/Release
-          ditto -c -k --keepParent MySafariExt.app MySafariExt_Perfect.zip
+          hdiutil create -volname "MySafariExt" -srcfolder "MySafariExt.app" -ov -format UDZO MySafariExt.dmg
           
-      - name: Upload App for Download
+      - name: Upload DMG for Download
         uses: actions/upload-artifact@v4
         with:
-          name: MySafariExt-Artifact
-          path: safari-build/MySafariExt/build/Release/MySafariExt_Perfect.zip
+          name: MySafariExt-DMG
+          # 提取打包好的 DMG 文件给你
+          path: safari-build/MySafariExt/build/Release/MySafariExt.dmg
